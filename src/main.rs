@@ -101,3 +101,38 @@ fn fnorm(nom: u64, den: u64) -> Result<(u64, u64), String> {
 
     Ok((nom / xa, den / xa))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_0010() {
+        let result = fnorm(486, 12);
+        assert_eq!(result, Ok((81, 2)));
+    }
+
+    #[test]
+    fn test_0020() {
+        let result = fnorm(96, 4);
+        assert_eq!(result, Ok((24, 1)));
+    }
+
+    #[test]
+    fn test_0030() {
+        let result = fnorm(0, 3);
+        assert_eq!(result, Ok((0, 3)));
+    }
+
+    #[test]
+    fn test_0040() {
+        let result = fnorm(0, 0);
+
+        if let Err(msg) = &result {
+            assert_eq!(msg[0 .. 4], "divi".to_string());
+        }
+        else {
+            assert!(false);
+        }
+    }
+}
