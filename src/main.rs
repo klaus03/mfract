@@ -22,25 +22,17 @@ fn main() -> ExitCode {
     let c1 = RX_FRACT1.captures_iter(&inp_fract).next();
     let c2 = RX_FRACT2.captures_iter(&inp_fract).next();
 
-    let (inp_nom, inp_den, inp_err);
+    let (inp_nom, inp_den);
 
     if let Some(s) = c1 {
-        inp_err = false;
         inp_nom = s[1].to_string();
-        inp_den = String::from("1");
+        inp_den = "1".to_string();
     }
     else if let Some(s) = c2 {
-        inp_err = false;
         inp_nom = s[1].to_string();
         inp_den = s[2].to_string();
     }
     else {
-        inp_err = true;
-        inp_nom = String::from("???");
-        inp_den = String::from("???");
-    }
-
-    if inp_err {
         eprintln!("E0030: Could not parse fraction");
         return ExitCode::from(30);
     }
