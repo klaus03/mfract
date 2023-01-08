@@ -4,7 +4,7 @@ use std::env::args;
 use std::process::ExitCode;
 
 struct MyNum {
-    mant: u64,
+    mnt: u64,
     exp: u8,
 }
 
@@ -48,21 +48,21 @@ fn get_fract(inp_fract: &String) -> Result<Fract, (u8, String)> {
     lazy_static! { static ref RX_FRACT1: Regex = Regex::new(r"(?xms)\A ([^/]+)           \z").unwrap(); }
     lazy_static! { static ref RX_FRACT2: Regex = Regex::new(r"(?xms)\A ([^/]+) / ([^/]+) \z").unwrap(); }
 
-    let (inp_nom, inp_den);
+    let (inp_num, inp_den);
 
     if let Some(s) = RX_FRACT1.captures(&inp_fract) {
-        inp_nom = s[1].to_string();
+        inp_num = s[1].to_string();
         inp_den = "1".to_string();
     }
     else if let Some(s) = RX_FRACT2.captures(&inp_fract) {
-        inp_nom = s[1].to_string();
+        inp_num = s[1].to_string();
         inp_den = s[2].to_string();
     }
     else {
         return Err((14, format!("Could not parse fraction")));
     }
 
-    let val_num = get_num(FType::Num, &inp_nom)?;
+    let val_num = get_num(FType::Num, &inp_num)?;
     let val_den = get_num(FType::Den, &inp_den)?;
 
     let exp_p10 =
@@ -83,56 +83,56 @@ fn get_fract(inp_fract: &String) -> Result<Fract, (u8, String)> {
 
     let mfr_dat =
         if val_num.exp > val_den.exp {
-            let opt_den = val_den.mant.checked_mul(val_p10);
+            let opt_den = val_den.mnt.checked_mul(val_p10);
 
             if opt_den.is_none() {
-                return Err((18, format!("Denominator overflow: {} * {}", val_den.mant, val_p10)));
+                return Err((18, format!("Denominator overflow: {} * {}", val_den.mnt, val_p10)));
             }
 
-            Fract{ numer: val_num.mant, denom: opt_den.unwrap() }
+            Fract{ numer: val_num.mnt, denom: opt_den.unwrap() }
         }
         else {
-            let opt_num = val_num.mant.checked_mul(val_p10);
+            let opt_num = val_num.mnt.checked_mul(val_p10);
 
             if opt_num.is_none() {
-                return Err((20, format!("Numerator overflow: {} * {}", val_num.mant, val_p10)));
+                return Err((20, format!("Numerator overflow: {} * {}", val_num.mnt, val_p10)));
             }
 
-            Fract{ numer: opt_num.unwrap(), denom: val_den.mant }
+            Fract{ numer: opt_num.unwrap(), denom: val_den.mnt }
         };
 
     Ok(get_norm(&mfr_dat)?)
 }
 
-fn get_num(stype: FType, sval: &String) -> Result<MyNum, (u8, String)> {
-    let label = match stype { FType::Num => "Numerator", FType::Den => "Denominator" };
+fn get_num(p_type: FType, p_str: &String) -> Result<MyNum, (u8, String)> {
+    let p_label = match p_type { FType::Num => "Numerator", FType::Den => "Denominator" };
 
     lazy_static! { static ref RX_NUM1: Regex = Regex::new(r"(?xms)\A \d+               \z").unwrap(); }
     lazy_static! { static ref RX_NUM2: Regex = Regex::new(r"(?xms)\A (\d+) [,\.] (\d+) \z").unwrap(); }
 
-    let gn_mant: String;
+    let gn_str: String;
     let gn_exp: u8;
 
-    if RX_NUM1.find(&sval).is_some() {
-        gn_mant = sval.to_string();
-        gn_exp  = 0;
+    if RX_NUM1.find(&p_str).is_some() {
+        gn_str = p_str.to_string();
+        gn_exp = 0;
     }
-    else if let Some(s) = RX_NUM2.captures(&sval) {
+    else if let Some(s) = RX_NUM2.captures(&p_str) {
         let p1 = s[1].to_string();
         let p2 = s[2].to_string();
 
-        gn_mant = p1 + &p2;
-        gn_exp  = u8::try_from(p2.len()).unwrap_or(0);
+        gn_str = p1 + &p2;
+        gn_exp = u8::try_from(p2.len()).unwrap_or(0);
     }
     else {
-        return Err((22, format!("Can't parse {} = '{}'", label, sval)));
+        return Err((22, format!("Can't parse {} = '{}'", p_label, p_str)));
     }
 
-    if let Ok(v) = gn_mant.parse::<u64>() {
-        return Ok(MyNum{ mant: v, exp: gn_exp });
+    if let Ok(gn_mnt) = gn_str.parse::<u64>() {
+        return Ok(MyNum{ mnt: gn_mnt, exp: gn_exp });
     }
 
-    Err((24, format!("Integer overflow {} = '{}'", label, sval)))
+    Err((24, format!("Integer overflow {} = '{}'", p_label, p_str)))
 }
 
 fn get_norm(fr: &Fract) -> Result<Fract, (u8, String)> {
@@ -156,7 +156,7 @@ fn get_norm(fr: &Fract) -> Result<Fract, (u8, String)> {
         xa = tmp;
     }
 
-    Ok(Fract{ numer: fr.numer / xa, denom: fr.denom / xa})
+    Ok(Fract{ numer: fr.numer / xa, denom: fr.denom / xa })
 }
 
 #[cfg(test)]
@@ -183,42 +183,6 @@ mod tests {
 
     #[test]
     fn test_0040() {
-        let result = get_norm(&Fract{ numer: 0, denom: 0 });
-
-        if let Err((ecd, _)) = result {
-            assert_eq!(ecd, 26);
-        }
-        else {
-            assert!(false);
-        }
-    }
-
-    #[test]
-    fn test_0050() {
-        let result = get_fract(&"100000000000000000000/3".to_string());
-
-        if let Err((ecd, _)) = result {
-            assert_eq!(ecd, 24); // Integer overflow Numerator
-        }
-        else {
-            assert!(false);
-        }
-    }
-
-    #[test]
-    fn test_0060() {
-        let result = get_fract(&"3/100000000000000000000".to_string());
-
-        if let Err((ecd, _)) = result {
-            assert_eq!(ecd, 24); // Integer overflow Denominator
-        }
-        else {
-            assert!(false);
-        }
-    }
-
-    #[test]
-    fn test_0070() {
         let result = get_fract(&"3/10000000000000000000".to_string());
 
         if let Ok(_) = result {
@@ -229,7 +193,13 @@ mod tests {
     }
 
     #[test]
-    fn test_0080() {
+    fn test_0050() {
+        let result = get_fract(&"35,6/12".to_string());
+        assert_eq!(result, Ok(Fract{ numer: 89, denom: 30 }));
+    }
+
+    #[test]
+    fn test_0060() {
         let result = get_fract(&"0,000000000000001/1000000000000000000".to_string());
 
         if let Err((ecd, _)) = result {
@@ -241,7 +211,7 @@ mod tests {
     }
 
     #[test]
-    fn test_0090() {
+    fn test_0070() {
         let result = get_fract(&"1000000000000000000/0,000000000000001".to_string());
 
         if let Err((ecd, _)) = result {
@@ -253,17 +223,47 @@ mod tests {
     }
 
     #[test]
-    fn test_0100() {
-        let result = get_fract(&"35,6/12".to_string());
-        assert_eq!(result, Ok(Fract{ numer: 89, denom: 30 }));
-    }
-
-    #[test]
-    fn test_0110() {
+    fn test_0080() {
         let result = get_fract(&"smdjfklsjkdf".to_string());
 
         if let Err((ecd, _)) = result {
             assert_eq!(ecd, 22); // Can't parse
+        }
+        else {
+            assert!(false);
+        }
+    }
+
+    #[test]
+    fn test_0090() {
+        let result = get_fract(&"100000000000000000000/3".to_string());
+
+        if let Err((ecd, _)) = result {
+            assert_eq!(ecd, 24); // Integer overflow Numerator
+        }
+        else {
+            assert!(false);
+        }
+    }
+
+    #[test]
+    fn test_0100() {
+        let result = get_fract(&"3/100000000000000000000".to_string());
+
+        if let Err((ecd, _)) = result {
+            assert_eq!(ecd, 24); // Integer overflow Denominator
+        }
+        else {
+            assert!(false);
+        }
+    }
+
+    #[test]
+    fn test_0110() {
+        let result = get_norm(&Fract{ numer: 0, denom: 0 });
+
+        if let Err((ecd, _)) = result {
+            assert_eq!(ecd, 26); // Division by zero
         }
         else {
             assert!(false);
