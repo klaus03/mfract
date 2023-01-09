@@ -65,40 +65,26 @@ fn get_fract(inp_fract: &String) -> Result<Fract, (u8, String)> {
     let val_num = get_num(FType::Num, &inp_num)?;
     let val_den = get_num(FType::Den, &inp_den)?;
 
-    let exp_p10 =
-        if val_num.exp > val_den.exp {
-            val_num.exp - val_den.exp
-        }
-        else {
-            val_den.exp - val_num.exp
-        };
+    let exp_p10 = val_num.exp.abs_diff(val_den.exp);
 
-    let opt_p10 = 10_u64.checked_pow(exp_p10.into());
-
-    if opt_p10.is_none() {
-        return Err((16, format!("p10 overflow for 10 ^ {}", exp_p10)));
-    }
-
-    let val_p10 = opt_p10.unwrap();
+    let val_p10 =
+      10_u64.checked_pow(exp_p10.into()).
+      ok_or((16, format!("p10 overflow for 10 ^ {}", exp_p10)))?;
 
     let mfr_dat =
         if val_num.exp > val_den.exp {
-            let opt_den = val_den.mnt.checked_mul(val_p10);
+            let tmp_den =
+              val_den.mnt.checked_mul(val_p10).
+              ok_or((18, format!("Denominator overflow: {} * {}", val_den.mnt, val_p10)))?;
 
-            if opt_den.is_none() {
-                return Err((18, format!("Denominator overflow: {} * {}", val_den.mnt, val_p10)));
-            }
-
-            Fract{ numer: val_num.mnt, denom: opt_den.unwrap() }
+            Fract{ numer: val_num.mnt, denom: tmp_den }
         }
         else {
-            let opt_num = val_num.mnt.checked_mul(val_p10);
+            let tmp_num =
+              val_num.mnt.checked_mul(val_p10).
+              ok_or((20, format!("Numerator overflow: {} * {}", val_den.mnt, val_p10)))?;
 
-            if opt_num.is_none() {
-                return Err((20, format!("Numerator overflow: {} * {}", val_num.mnt, val_p10)));
-            }
-
-            Fract{ numer: opt_num.unwrap(), denom: val_den.mnt }
+            Fract{ numer: tmp_num, denom: val_den.mnt }
         };
 
     Ok(get_norm(&mfr_dat)?)
@@ -128,11 +114,11 @@ fn get_num(p_type: FType, p_str: &String) -> Result<MyNum, (u8, String)> {
         return Err((22, format!("Can't parse {} = '{}'", p_label, p_str)));
     }
 
-    if let Ok(gn_mnt) = gn_str.parse::<u64>() {
-        return Ok(MyNum{ mnt: gn_mnt, exp: gn_exp });
-    }
+    let gn_mnt =
+      gn_str.parse::<u64>().
+      map_err(|_| (24, format!("Integer overflow {} = '{}'", p_label, p_str)))?;
 
-    Err((24, format!("Integer overflow {} = '{}'", p_label, p_str)))
+    Ok(MyNum{ mnt: gn_mnt, exp: gn_exp })
 }
 
 fn get_norm(fr: &Fract) -> Result<Fract, (u8, String)> {
@@ -144,7 +130,7 @@ fn get_norm(fr: &Fract) -> Result<Fract, (u8, String)> {
         return Ok(Fract{ numer: 0, denom: 1 });
     }
 
-    // Calculate gcd using the Euclid algorithm
+    // Calculate gcd using the Euclidean algorithm
     // https://en.wikipedia.org/wiki/Euclidean_algorithm
 
     let mut xa = fr.numer;
