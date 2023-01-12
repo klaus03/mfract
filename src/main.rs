@@ -82,7 +82,7 @@ fn get_fract(inp_fract: &String) -> Result<Fract, (u8, String)> {
         else {
             let tmp_num =
               val_num.mnt.checked_mul(val_p10).
-              ok_or((20, format!("Numerator overflow: {} * {}", val_den.mnt, val_p10)))?;
+              ok_or((20, format!("Numerator overflow: {} * {}", val_num.mnt, val_p10)))?;
 
             Fract{ numer: tmp_num, denom: val_den.mnt }
         };
@@ -104,11 +104,8 @@ fn get_num(p_type: FType, p_str: &String) -> Result<MyNum, (u8, String)> {
         gn_exp = 0;
     }
     else if let Some(s) = RX_NUM2.captures(&p_str) {
-        let p1 = s[1].to_string();
-        let p2 = s[2].to_string();
-
-        gn_str = p1 + &p2;
-        gn_exp = u8::try_from(p2.len()).unwrap_or(0);
+        gn_str = s[1].to_string() + &s[2];
+        gn_exp = u8::try_from(s[2].len()).unwrap_or(0);
     }
     else {
         return Err((22, format!("Can't parse {} = '{}'", p_label, p_str)));
