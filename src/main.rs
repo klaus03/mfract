@@ -44,7 +44,7 @@ fn main() -> ExitCode {
     ExitCode::SUCCESS
 }
 
-fn get_fract(inp_fract: &String) -> Result<Fract, (u8, String)> {
+fn get_fract(inp_fract: &str) -> Result<Fract, (u8, String)> {
     lazy_static! { static ref RX_FRACT1: Regex = Regex::new(r"(?xms)\A ([^/]+)           \z").unwrap(); }
     lazy_static! { static ref RX_FRACT2: Regex = Regex::new(r"(?xms)\A ([^/]+) / ([^/]+) \z").unwrap(); }
 
@@ -90,7 +90,7 @@ fn get_fract(inp_fract: &String) -> Result<Fract, (u8, String)> {
     Ok(get_norm(&mfr_dat)?)
 }
 
-fn get_num(p_type: FType, p_str: &String) -> Result<MyNum, (u8, String)> {
+fn get_num(p_type: FType, p_str: &str) -> Result<MyNum, (u8, String)> {
     let p_label = match p_type { FType::Num => "Numerator", FType::Den => "Denominator" };
 
     lazy_static! { static ref RX_NUM1: Regex = Regex::new(r"(?xms)\A \d+               \z").unwrap(); }
