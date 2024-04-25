@@ -20,17 +20,19 @@ enum FType {
 }
 
 fn main() -> ExitCode {
-    if args().len() <= 1 {
-        eprintln!("E{:04}: {}", 10, "No argument found");
-        return ExitCode::from(10);
-    }
+    let my_arg;
 
-    if args().len() != 2 {
-        eprintln!("E{:04}: {}", 12, format!("Too many arguments ({})", args().len() - 1));
+    if args().len() <= 1 {
+        my_arg = "458/128".to_string();
+    }
+    else if args().len() == 2 {
+        my_arg = args().nth(1).unwrap();
+    }
+    else {
+        eprintln!("E{:04}: Too many arguments ({})", 12, args().len() - 1);
         return ExitCode::from(12);
     }
 
-    let my_arg = args().skip(1).next().unwrap();
     let my_opt = get_fract(&my_arg);
 
     if let Err((ecd, emsg)) = my_opt {
@@ -40,7 +42,7 @@ fn main() -> ExitCode {
 
     let my_mfr = my_opt.unwrap();
 
-    println!("{}/{}", my_mfr.numer, my_mfr.denom);
+    println!("{} => {}/{}", my_arg, my_mfr.numer, my_mfr.denom);
     ExitCode::SUCCESS
 }
 
@@ -50,16 +52,16 @@ fn get_fract(inp_fract: &str) -> Result<Fract, (u8, String)> {
 
     let (inp_num, inp_den);
 
-    if let Some(s) = RX_FRACT1.captures(&inp_fract) {
+    if let Some(s) = RX_FRACT1.captures(inp_fract) {
         inp_num = s[1].to_string();
         inp_den = "1".to_string();
     }
-    else if let Some(s) = RX_FRACT2.captures(&inp_fract) {
+    else if let Some(s) = RX_FRACT2.captures(inp_fract) {
         inp_num = s[1].to_string();
         inp_den = s[2].to_string();
     }
     else {
-        return Err((14, format!("Could not parse fraction")));
+        return Err((14, "Could not parse fraction".to_string()));
     }
 
     let val_num = get_num(FType::Num, &inp_num)?;
@@ -87,7 +89,7 @@ fn get_fract(inp_fract: &str) -> Result<Fract, (u8, String)> {
             Fract{ numer: tmp_num, denom: val_den.mnt }
         };
 
-    Ok(get_norm(&mfr_dat)?)
+    get_norm(&mfr_dat)
 }
 
 fn get_num(p_type: FType, p_str: &str) -> Result<MyNum, (u8, String)> {
@@ -99,11 +101,11 @@ fn get_num(p_type: FType, p_str: &str) -> Result<MyNum, (u8, String)> {
     let gn_str: String;
     let gn_exp: u8;
 
-    if RX_NUM1.find(&p_str).is_some() {
+    if RX_NUM1.find(p_str).is_some() {
         gn_str = p_str.to_string();
         gn_exp = 0;
     }
-    else if let Some(s) = RX_NUM2.captures(&p_str) {
+    else if let Some(s) = RX_NUM2.captures(p_str) {
         gn_str = s[1].to_string() + &s[2];
         gn_exp = u8::try_from(s[2].len()).unwrap_or(0);
     }
@@ -177,13 +179,13 @@ mod tests {
 
     #[test]
     fn test_0050() {
-        let result = get_fract(&"35,6/12".to_string());
+        let result = get_fract("35,6/12");
         assert_eq!(result, Ok(Fract{ numer: 89, denom: 30 }));
     }
 
     #[test]
     fn test_0060() {
-        let result = get_fract(&"0,000000000000001/1000000000000000000".to_string());
+        let result = get_fract("0,000000000000001/1000000000000000000");
 
         if let Err((ecd, _)) = result {
             assert_eq!(ecd, 18); // Denominator overflow
@@ -195,7 +197,7 @@ mod tests {
 
     #[test]
     fn test_0070() {
-        let result = get_fract(&"1000000000000000000/0,000000000000001".to_string());
+        let result = get_fract("1000000000000000000/0,000000000000001");
 
         if let Err((ecd, _)) = result {
             assert_eq!(ecd, 20); // Numerator overflow
@@ -207,7 +209,7 @@ mod tests {
 
     #[test]
     fn test_0080() {
-        let result = get_fract(&"smdjfklsjkdf".to_string());
+        let result = get_fract("smdjfklsjkdf");
 
         if let Err((ecd, _)) = result {
             assert_eq!(ecd, 22); // Can't parse
@@ -219,7 +221,7 @@ mod tests {
 
     #[test]
     fn test_0090() {
-        let result = get_fract(&"100000000000000000000/3".to_string());
+        let result = get_fract("100000000000000000000/3");
 
         if let Err((ecd, _)) = result {
             assert_eq!(ecd, 24); // Integer overflow Numerator
@@ -231,7 +233,7 @@ mod tests {
 
     #[test]
     fn test_0100() {
-        let result = get_fract(&"3/100000000000000000000".to_string());
+        let result = get_fract("3/100000000000000000000");
 
         if let Err((ecd, _)) = result {
             assert_eq!(ecd, 24); // Integer overflow Denominator
