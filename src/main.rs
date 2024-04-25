@@ -29,7 +29,7 @@ fn main() -> ExitCode {
         my_arg = args().nth(1).unwrap();
     }
     else {
-        eprintln!("E{:04}: too many arguments ({})", 12, args().len() - 1);
+        eprintln!("E{:04}: Too many arguments ({})", 12, args().len() - 1);
         return ExitCode::from(12);
     }
 
